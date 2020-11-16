@@ -2,7 +2,7 @@ const Axios = require('axios').default
 
 const Log = require('../util/log')
 const Scheduler = require('./index')
-const Mysql = require('../database/mysql')
+const bilibiliService = require('../services/bilibili')
 
 let getDynamicByID = async (option) => {
     Log.debug(option)
@@ -14,7 +14,7 @@ let getDynamicByID = async (option) => {
     // Mysql.query 是语句
     // 记得配置本地 config/config.js
 
-    // Mysql.query()
+    bilibiliService.addStatusList(res.data.data.cards)
 }
 
 let Bilibili = async () => {
