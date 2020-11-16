@@ -1,7 +1,7 @@
 {
-  "name": "matataki-auth-be",
+  "name": "matatakipuller",
   "version": "1.0.0",
-  "description": "Backend of MatatakiAuth Platform",
+  "description": "Caching spider bot for Matataki Social Network Aggregator",
   "main": "app.js",
   "repository": "https://github.com/AyakaLab/MatatakiAuth-BE.git",
   "author": "Ayaka Neko <neko@ayaka.moe>",
