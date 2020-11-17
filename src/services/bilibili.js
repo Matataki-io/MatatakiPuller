@@ -15,11 +15,11 @@ class BilibiliService {
             const { desc, card } = statusList[i]
             const jsonData = JSON.stringify({ desc, card })
             if (jsonData.length > 10239) {
-                Log.warning(`存入 ${PLATFORM} 动态时遇到过大的 Data JSON，id: ${desc.dynamic_id_str}`)
+                Log.warning(`存入 ${PLATFORM} 动态时遇到过大的 Data JSON，id: ${desc.dynamic_id}`)
                 continue
             }
             valuesData.push(
-                PLATFORM + '_' + desc.dynamic_id_str,
+                PLATFORM + '_' + desc.dynamic_id,
                 PLATFORM,
                 desc.uid,
                 desc.user_profile.info.uname,
