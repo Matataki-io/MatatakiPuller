@@ -16,7 +16,8 @@
     "moment": "^2.29.1",
     "mysql": "^2.18.1",
     "nedb": "^1.8.0",
-    "nodemon": "^2.0.6"
+    "nodemon": "^2.0.6",
+    "xhr2": "^0.2.0"
   },
   "scripts": {
     "start": "node app.js",
