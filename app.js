@@ -14,20 +14,20 @@ const KoaStatic = require('koa-static')
 const KoaRouter = require('koa-router')
 const koaBody = require('koa-body')
 
-let config = undefined
-try {
-    config = require('./config/config.js')
-} 
-catch(e) {
-    Log.fatal(e)
-    let err = new Error('请先根据 config.json.example 创建 config.json 文件')
-    err.name = 'Configuration Error'
-    throw err
-}
-
 // Local Packages
 const Log = require('./src/util/log')
 const Global = require('./src/util/global')
+
+let config = undefined
+try {
+    config = require('./config/config')
+} 
+catch(e) {
+    Log.fatal(e)
+    let err = new Error('请先根据 config.js.example 创建 config.js 文件')
+    err.name = 'Configuration Error'
+    throw err
+}
 
 let app = new Koa()
 app.proxy = true
@@ -36,7 +36,6 @@ app.use(koaBody({ multipart: true }));
 
 Global.Add('config', config)
 const routers = require('./src/route/router.js')
-const { Bilibili } = require('./src/schedule/bilibili')
 
 // to Log
 app.use(async (ctx, next) => {
@@ -78,7 +77,11 @@ app.use(async (ctx, next) => {
 app.use(test.routes()).use(test.allowedMethods())
 app.use(routers.routes()).use(routers.allowedMethods())
 
+const { Bilibili } = require('./src/schedule/bilibili')
+const { Twitter } = require('./src/schedule/twitter')
+
 Bilibili()
+Twitter()
 
 app.use(KoaStatic('./public'))
 
