@@ -36,8 +36,8 @@ class BilibiliService {
             ON DUPLICATE KEY UPDATE
                 data = VALUES(data);
         `
-        const res = await Mysql.query(sql, valuesData)
-        console.log('数据库返回的结果：', res)
+        const res = await Mysql.cache.query(sql, valuesData)
+        Log.debug('数据库返回的结果：' + JSON.stringify(res))
         return res
     }
 }
