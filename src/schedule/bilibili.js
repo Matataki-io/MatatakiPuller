@@ -5,7 +5,7 @@ const Scheduler = require('./index')
 const bilibiliService = require('../services/bilibili')
 
 let getDynamicByID = async () => {
-    const list = await Axios.get(`http://127.0.0.1:8083/user/info/bilibili`)
+    const list = await Axios.get(`https://auth.matataki.io/api/user/info/bilibili`)
     try {
         list.data.forEach(async item => {
             if (!item.available) return
