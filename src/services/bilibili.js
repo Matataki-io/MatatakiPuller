@@ -22,22 +22,24 @@ class BilibiliService {
                 PLATFORM + '_' + desc.dynamic_id,
                 PLATFORM,
                 desc.uid,
+                desc.uid,
                 desc.user_profile.info.uname,
                 moment(Math.round(Number(desc.timestamp) * 1000)).format('YYYY-MM-DD HH:mm:ss'),
                 jsonData
             )
-            valuesSql += (i !== 0 ? ',' : '') + '(?, ?, ?, ?, ?, ?)'
+            valuesSql += (valuesSql ? ',' : '') + '(?, ?, ?, ?, ?, ?, ?)'
         }
+        if (!valuesSql) return null
         const sql = `
             INSERT INTO platform_status_cache
-                (id, platform, platform_user_id, platform_username, timestamp, data)
+                (id, platform, platform_user, platform_user_id, platform_username, timestamp, data)
             VALUES
                 ${valuesSql}
             ON DUPLICATE KEY UPDATE
                 data = VALUES(data);
         `
         const res = await Mysql.cache.query(sql, valuesData)
-        Log.debug('数据库返回的结果：' + JSON.stringify(res))
+        Log.debug('Bilibili 数据库返回的结果：' + JSON.stringify(res))
         return res
     }
 }
