@@ -22,23 +22,25 @@ class TwitterService {
             valuesData.push(
                 PLATFORM + '_' + item.id_str,
                 PLATFORM,
+                item.user.screen_name,
                 item.user.id_str,
                 item.user.screen_name,
                 date,
                 jsonData
             )
-            valuesSql += (i !== 0 ? ',' : '') + '(?, ?, ?, ?, ?, ?)'
+            valuesSql += (valuesSql ? ',' : '') + '(?, ?, ?, ?, ?, ?, ?)'
         }
+        if (!valuesSql) return null
         const sql = `
             INSERT INTO platform_status_cache
-                (id, platform, platform_user_id, platform_username, timestamp, data)
+                (id, platform, platform_user, platform_user_id, platform_username, timestamp, data)
             VALUES
                 ${valuesSql}
             ON DUPLICATE KEY UPDATE
                 data = VALUES(data);
         `
         const res = await Mysql.cache.query(sql, valuesData)
-        Log.debug('数据库返回的结果：' + JSON.stringify(res))
+        Log.debug('Twitter 数据库返回的结果：' + JSON.stringify(res))
         return res
     }
 
@@ -56,7 +58,7 @@ class TwitterService {
             `
 
         const res = await Mysql.matataki.query(sql)
-        return res
+        return JSON.parse(JSON.stringify(res))
     }
 }
 
