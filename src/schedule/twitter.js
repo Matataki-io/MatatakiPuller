@@ -7,7 +7,6 @@ const codebird = require('../lib/codebird')
 const twitterService = require('../services/twitter')
 
 let getStatusByID = async () => {
-    // twitterService.getUserList()
     const cb = new codebird()
     cb.setUseProxy(true)
     cb.setConsumerKey(config.twitter.key, config.twitter.secret)
