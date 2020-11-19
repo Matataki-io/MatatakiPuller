@@ -10,7 +10,7 @@ class TimelineService {
     static async getSubscribedTimeline (userId, page = 1, pagesize = 20) {
         const follows = await this.getFollowUserIdAndTwitter(userId)
         if (!follows || !follows.length) {
-            return []
+            return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
         const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))
@@ -19,7 +19,7 @@ class TimelineService {
         console.log('最后参与查询的数据：', queryValues)
 
         if (!queryValues || !queryValues.length) {
-            return []
+            return { count: 0, list: [], code: 1002, error: 'Followers have no social accounts' }
         }
 
         const limitValues = [(page - 1) * pagesize, pagesize]
