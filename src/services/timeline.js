@@ -46,8 +46,8 @@ class TimelineService {
                 t2.account as twitter_name
             FROM follows t1
             LEFT JOIN user_accounts t2
-                ON t2.uid = t1.fuid AND t2.platform = 'twitter' AND t1.status = 1
-            WHERE t1.uid = ?;
+                ON t2.uid = t1.fuid AND t2.platform = 'twitter'
+            WHERE t1.uid = ? AND t1.status = 1;
         `
         const res = await Mysql.matataki.query(sql, [userId]);
         console.log('已关注的用户列表：', res)
