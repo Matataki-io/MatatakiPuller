@@ -10,6 +10,7 @@ class StatusController {
         }
         const { page = 1, pagesize = 20 } = ctx.request.query
         console.log('请求的用户：', ctx.user)
+        console.log('userId: ', ctx.user.id)
         const res = await TimelineService.getSubscribedTimeline(ctx.user.id, parseInt(page), parseInt(pagesize))
         ctx.body = {
             code: 0,
