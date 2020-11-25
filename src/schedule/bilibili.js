@@ -20,7 +20,7 @@ let getDynamicByID = async () => {
 
 let Bilibili = async () => {
     // 初始化轮询进程列表
-    const getDynamicByIDScheduler = new Scheduler(getDynamicByID, undefined, 60000)
+    const getDynamicByIDScheduler = new Scheduler(getDynamicByID, undefined, 360000)
     getDynamicByIDScheduler.start()
 }
 
