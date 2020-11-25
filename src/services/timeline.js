@@ -57,6 +57,7 @@ class TimelineService {
     }
 
     static async getFollowBilibiliByUsesrId (userIds) {
+        console.log('尝试获取 Bilibili 数据')
         try {
             const res = await Axios.post(`https://auth.matataki.io/apitest/user/info/bilibili`, { list: userIds, apiToken: config.apiToken })
             console.log('已关注用户的B站用户列表：', res.data)
