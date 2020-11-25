@@ -8,14 +8,12 @@ class TimelineService {
     constructor() {}
 
     static async getSubscribedTimeline (userId, page = 1, pagesize = 20) {
-        console.log('收到了请求')
         const follows = await this.getFollowUserIdAndTwitter(userId)
         if (!follows || !follows.length) {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
         const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))
-        console.log('bilibili Users: ', bilibiliUesrs)
         const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
@@ -48,7 +46,7 @@ class TimelineService {
                 t2.account as twitter_name
             FROM follows t1
             LEFT JOIN user_accounts t2
-                ON t2.uid = t1.fuid AND t2.platform = 'twitter'
+                ON t2.uid = t1.fuid AND t2.platform = 'twitter' AND t1.status = 1
             WHERE t1.uid = ?;
         `
         const res = await Mysql.matataki.query(sql, [userId]);
@@ -57,7 +55,6 @@ class TimelineService {
     }
 
     static async getFollowBilibiliByUsesrId (userIds) {
-        console.log('尝试获取 Bilibili 数据')
         try {
             const res = await Axios.post(`https://auth.matataki.io/apitest/user/info/bilibili`, { list: userIds, apiToken: config.apiToken })
             console.log('已关注用户的B站用户列表：', res.data)
