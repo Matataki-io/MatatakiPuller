@@ -9,7 +9,6 @@ let getDynamicByID = async () => {
     const list = await Axios.get(`https://auth.matataki.io/api/user/info/bilibili`, { params: { apiToken: config.apiKey } })
     try {
         list.data.forEach(async item => {
-            if (!item.available) return
             const res = await Axios.get(`https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?host_uid=${item.userId}&offset_dynamic_id=0&need_top=1`)
             bilibiliService.addStatusList(res.data.data.cards)
         })
