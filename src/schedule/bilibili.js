@@ -1,11 +1,12 @@
 const Axios = require('axios').default
 
 const Log = require('../util/log')
+const config = require('../../config/config')
 const Scheduler = require('./index')
 const bilibiliService = require('../services/bilibili')
 
 let getDynamicByID = async () => {
-    const list = await Axios.get(`https://auth.matataki.io/api/user/info/bilibili`)
+    const list = await Axios.get(`https://auth.matataki.io/api/user/info/bilibili`, { params: { apiToken: config.apiKey } })
     try {
         list.data.forEach(async item => {
             if (!item.available) return
@@ -19,7 +20,7 @@ let getDynamicByID = async () => {
 }
 
 let getDynamicByIDTest = async () => {
-    const list = await Axios.get(`https://auth.matataki.io/apitest/user/info/bilibili`)
+    const list = await Axios.get(`https://auth.matataki.io/apitest/user/info/bilibili`, { params: { apiToken: config.apiKey } })
     try {
         list.data.forEach(async item => {
             if (!item.available) return
