@@ -12,6 +12,15 @@ status.use(async (ctx, next) => {
     await next()
 })
 
-status.get('/timeline', StatusController.getStatus)
+status.get('/timeline', async (ctx, next) => {
+    if (ctx.request.query.network === 'test') {
+        const res = await StatusController.getStatusTest(ctx, next)
+        ctx.body = res
+    }
+    else {
+        const res = await StatusController.getStatus(ctx, next)
+        ctx.body = res
+    }
+})
 
 module.exports = status
