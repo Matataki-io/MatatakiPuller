@@ -14,7 +14,11 @@ let getStatusByID = async () => {
     
     list.forEach(async item => {
         const reply = await new Promise((resolve, reject) => {
-            cb.__call("statuses_userTimeline", { screen_name: item.account }, function (reply, rate, err) {
+            cb.__call("statuses_userTimeline",
+            {
+                screen_name: item.account,
+                exclude_replies: 1
+            }, function (reply, rate, err) {
                 if (err) {
                     reject('error response or timeout exceeded' + err.error)
                     return
@@ -37,7 +41,11 @@ let getStatusByIDTest = async () => {
     
     list.forEach(async item => {
         const reply = await new Promise((resolve, reject) => {
-            cb.__call("statuses_userTimeline", { screen_name: item.account }, function (reply, rate, err) {
+            cb.__call("statuses_userTimeline",
+            {
+                screen_name: item.account,
+                exclude_replies: 1
+            }, function (reply, rate, err) {
                 if (err) {
                     reject('error response or timeout exceeded' + err.error)
                     return
