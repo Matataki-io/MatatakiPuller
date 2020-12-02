@@ -34,10 +34,10 @@ let getDynamicByIDTest = async () => {
 
 let Bilibili = async () => {
     // 初始化轮询进程列表
-    const getDynamicByIDScheduler = new Scheduler(getDynamicByID, undefined, 360000)
+    const getDynamicByIDScheduler = new Scheduler(getDynamicByID, undefined, 36000)
     getDynamicByIDScheduler.start()
     // 初始化轮询进程列表
-    const getDynamicByIDTestScheduler = new Scheduler(getDynamicByIDTest, undefined, 360000)
+    const getDynamicByIDTestScheduler = new Scheduler(getDynamicByIDTest, undefined, 36000)
     getDynamicByIDTestScheduler.start()
 }
 
