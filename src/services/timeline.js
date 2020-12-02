@@ -13,7 +13,7 @@ class TimelineService {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
-        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))
+        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid)).map(item => item.userId)
         const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
@@ -25,7 +25,7 @@ class TimelineService {
         const limitValues = [(page - 1) * pagesize, pagesize]
 
         const sqlBase = `
-            platform_status_cache 
+            platform_status_cache
             WHERE platform_user IN(${this.createValueList(queryValues)})
             ORDER BY timestamp DESC
         `
@@ -37,6 +37,36 @@ class TimelineService {
             count: res[1][0].count,
             list: res[0]
         }
+    }
+
+    static async getStatusSubscriptionList (userId) {
+        const sql = `
+            SELECT
+                t1.fuid as id,
+                t2.account as twitter_name,
+                t3.username,
+                t3.nickname,
+                t3.avatar,
+                t3.introduction
+            FROM follows t1
+            LEFT JOIN user_accounts t2
+                    ON t2.uid = t1.fuid AND t2.platform = 'twitter'
+            LEFT JOIN users t3
+                    ON t3.id = t1.fuid
+            WHERE t1.uid = ? AND t1.status = 1;
+        `;
+
+        const follows = await Mysql.matataki.query(sql, [userId]);
+
+        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.id));
+
+        return follows.map(follow => {
+            const bilibiliId = { ...bilibiliUesrs.find(bUser => bUser.id === follow.id) }.userId;
+            return {
+                ...follow,
+                bilibili_id: bilibiliId || null
+            };
+        }).filter(follow => follow.bilibili_id || follow.twitter_name);
     }
 
     static async getFollowUserIdAndTwitter (userId) {
@@ -58,7 +88,7 @@ class TimelineService {
         try {
             const res = await Axios.post(`https://auth.matataki.io/api/user/info/bilibili`, { list: userIds, apiToken: config.apiToken })
             console.log('已关注用户的B站用户列表：', res.data)
-            return res.data.map(item => item.userId)
+            return res.data
         }
         catch (e) {
             console.error('获取不到已关注的B站用户列表')
@@ -84,7 +114,7 @@ class TimelineTestService {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
-        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))
+        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid)).map(item => item.userId)
         const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
@@ -96,7 +126,7 @@ class TimelineTestService {
         const limitValues = [(page - 1) * pagesize, pagesize]
 
         const sqlBase = `
-            platform_status_cache 
+            platform_status_cache
             WHERE platform_user IN(${this.createValueList(queryValues)})
             ORDER BY timestamp DESC
         `
@@ -108,6 +138,36 @@ class TimelineTestService {
             count: res[1][0].count,
             list: res[0]
         }
+    }
+
+    static async getStatusSubscriptionList (userId) {
+        const sql = `
+            SELECT
+                t1.fuid as id,
+                t2.account as twitter_name,
+                t3.username,
+                t3.nickname,
+                t3.avatar,
+                t3.introduction
+            FROM follows t1
+            LEFT JOIN user_accounts t2
+                    ON t2.uid = t1.fuid AND t2.platform = 'twitter'
+            LEFT JOIN users t3
+                    ON t3.id = t1.fuid
+            WHERE t1.uid = ? AND t1.status = 1;
+        `;
+
+        const follows = await Mysql.matatakiTest.query(sql, [userId]);
+
+        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.id));
+
+        return follows.map(follow => {
+            const bilibiliId = { ...bilibiliUesrs.find(bUser => bUser.id === follow.id) }.userId;
+            return {
+                ...follow,
+                bilibili_id: bilibiliId || null
+            };
+        }).filter(follow => follow.bilibili_id || follow.twitter_name);
     }
 
     static async getFollowUserIdAndTwitter (userId) {
@@ -129,7 +189,7 @@ class TimelineTestService {
         try {
             const res = await Axios.post(`https://auth.matataki.io/apitest/user/info/bilibili`, { list: userIds, apiToken: config.apiToken })
             console.log('已关注用户的B站用户列表：', res.data)
-            return res.data.map(item => item.userId)
+            return res.data
         }
         catch (e) {
             console.error('获取不到已关注的B站用户列表')

@@ -23,4 +23,15 @@ status.get('/timeline', async (ctx, next) => {
     }
 })
 
+status.get('/subscriptions', async (ctx, next) => {
+    if (ctx.request.query.network === 'test') {
+        const res = await StatusController.getStatusSubscriptionListTest(ctx, next)
+        ctx.body = res
+    }
+    else {
+        const res = await StatusController.getStatusSubscriptionList(ctx, next)
+        ctx.body = res
+    }
+})
+
 module.exports = status
