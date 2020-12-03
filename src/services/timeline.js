@@ -61,7 +61,7 @@ class TimelineService {
         const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.id));
 
         return follows.map(follow => {
-            const bilibiliId = { ...bilibiliUesrs.find(bUser => bUser.id === follow.id) }.userId;
+            const bilibiliId = { ...bilibiliUesrs.find(bUser => parseInt(bUser.id) === follow.id) }.userId;
             return {
                 ...follow,
                 bilibili_id: bilibiliId || null
@@ -160,9 +160,9 @@ class TimelineTestService {
         const follows = await Mysql.matatakiTest.query(sql, [userId]);
 
         const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.id));
-
+        
         return follows.map(follow => {
-            const bilibiliId = { ...bilibiliUesrs.find(bUser => bUser.id === follow.id) }.userId;
+            const bilibiliId = { ...bilibiliUesrs.find(bUser => parseInt(bUser.id) === follow.id) }.userId;
             return {
                 ...follow,
                 bilibili_id: bilibiliId || null
