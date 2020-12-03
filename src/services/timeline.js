@@ -13,7 +13,7 @@ class TimelineService {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
-        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid)).map(item => item.userId)
+        const bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
         const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
@@ -114,7 +114,7 @@ class TimelineTestService {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
-        const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid)).map(item => item.userId)
+        const bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
         const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
