@@ -60,6 +60,22 @@ class StatusController {
             data: res
         }
     }
+
+    // start 请使用 dynamic_id_str， 而不是 dynamic_id
+    static async getUserBilibiliTimeline (ctx) {
+        const { start = 0 } = ctx.request.query
+        const userId = parseInt(ctx.params.id)
+        const res = await TimelineService.getUserBilibiliTimeline(userId, !isNaN(start) && start)
+        return res
+    }
+
+    // start 请使用 dynamic_id_str， 而不是 dynamic_id
+    static async getUserBilibiliTimelineTest (ctx) {
+        const { start = 0 } = ctx.request.query
+        const userId = parseInt(ctx.params.id)
+        const res = await TimelineTestService.getUserBilibiliTimeline(userId, !isNaN(start) && start)
+        return res
+    }
 }
 
 module.exports = StatusController

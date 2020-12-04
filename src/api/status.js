@@ -34,4 +34,15 @@ status.get('/subscriptions', async (ctx, next) => {
     }
 })
 
+status.get('/user-timeline/bilibili/:id', async (ctx, next) => {
+    if (ctx.request.query.network === 'test') {
+        const res = await StatusController.getUserBilibiliTimelineTest(ctx, next)
+        ctx.body = res
+    }
+    else {
+        const res = await StatusController.getUserBilibiliTimeline(ctx, next)
+        ctx.body = res
+    }
+})
+
 module.exports = status

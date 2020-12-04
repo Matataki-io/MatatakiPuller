@@ -103,6 +103,21 @@ class TimelineService {
         })
         return str
     }
+
+    // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
+    static async getUserBilibiliTimeline (userId, offsetDynamicId) {
+        try {
+            const biliUsers = await this.getFollowBilibiliByUsesrId([userId])
+            if (!biliUsers || !biliUsers.length) return { count: 0, list: [], code: 1100, error: 'Unbound bilibili' }
+
+            const res = await Axios.get(`https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?host_uid=${biliUsers[0].userId}&offset_dynamic_id=${offsetDynamicId||0}&need_top=1`)
+            return { count: 0, uuid: biliUsers[0].userId, list: res.data.data.cards || [], code: 0 }
+        }
+        catch (e) {
+            console.error(`用户:${userId} 的B站时间线获取失败，错误信息：`, e)
+            return { count: 0, list: [], code: 1101, erorr: 'unknown mistake' }
+        }
+    }
 }
 
 class TimelineTestService {
@@ -203,6 +218,21 @@ class TimelineTestService {
             str += (str ? ',' : '') + '?'
         })
         return str
+    }
+
+    // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
+    static async getUserBilibiliTimeline (userId, offsetDynamicId) {
+        try {
+            const biliUsers = await this.getFollowBilibiliByUsesrId([userId])
+            if (!biliUsers || !biliUsers.length) return { count: 0, list: [], code: 1100, error: 'Unbound bilibili' }
+
+            const res = await Axios.get(`https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?host_uid=${biliUsers[0].userId}&offset_dynamic_id=${offsetDynamicId||0}&need_top=1`)
+            return { count: 0, uuid: biliUsers[0].userId, list: res.data.data.cards || [], code: 0 }
+        }
+        catch (e) {
+            console.error(`用户:${userId} 的B站时间线获取失败，错误信息：`, e)
+            return { count: 0, list: [], code: 1101, erorr: 'unknown mistake' }
+        }
     }
 }
 
