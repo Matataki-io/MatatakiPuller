@@ -8,10 +8,11 @@ class StatusController {
             ctx.status = 403
             return
         }
-        const { page = 1, pagesize = 20 } = ctx.request.query
+        let { page = 1, pagesize = 20, filters } = ctx.request.query
+        filters = filters ? JSON.parse(filters) : undefined;
         console.log('请求的用户：', ctx.user)
         console.log('userId: ', ctx.user.id)
-        const res = await TimelineService.getSubscribedTimeline(ctx.user.id, parseInt(page), parseInt(pagesize))
+        const res = await TimelineService.getSubscribedTimeline(ctx.user.id, parseInt(page), parseInt(pagesize), filters)
         return {
             code: 0,
             data: res
@@ -23,10 +24,11 @@ class StatusController {
             ctx.status = 403
             return
         }
-        const { page = 1, pagesize = 20 } = ctx.request.query
+        let { page = 1, pagesize = 20, filters } = ctx.request.query
+        filters = filters ? JSON.parse(filters) : undefined;
         console.log('请求的用户：', ctx.user)
         console.log('userId: ', ctx.user.id)
-        const res = await TimelineTestService.getSubscribedTimeline(ctx.user.id, parseInt(page), parseInt(pagesize))
+        const res = await TimelineTestService.getSubscribedTimeline(ctx.user.id, parseInt(page), parseInt(pagesize), filters)
         return {
             code: 0,
             data: res

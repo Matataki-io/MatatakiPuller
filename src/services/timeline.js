@@ -7,14 +7,22 @@ const config = require('../../config/config')
 class TimelineService {
     constructor() {}
 
-    static async getSubscribedTimeline (userId, page = 1, pagesize = 20) {
+    static async getSubscribedTimeline (userId, page = 1, pagesize = 20, filters) {
         const follows = await this.getFollowUserIdAndTwitter(userId)
         if (!follows || !follows.length) {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
-        const bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
-        const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
+        let bilibiliUesrs = []
+        if (!filters || filters.includes('bilibili')) {
+            bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
+        }
+
+        let twitterUsesrs = []
+        if (!filters || filters.includes('twitter')) {
+            twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
+        }
+
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
 
@@ -123,14 +131,22 @@ class TimelineService {
 class TimelineTestService {
     constructor() {}
 
-    static async getSubscribedTimeline (userId, page = 1, pagesize = 20) {
+    static async getSubscribedTimeline (userId, page = 1, pagesize = 20, filters) {
         const follows = await this.getFollowUserIdAndTwitter(userId)
         if (!follows || !follows.length) {
             return { count: 0, list: [], code: 1001, error: 'Follow is empty' }
         }
 
-        const bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
-        const twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
+        let bilibiliUesrs = []
+        if (!filters || filters.includes('bilibili')) {
+            bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
+        }
+
+        let twitterUsesrs = []
+        if (!filters || filters.includes('twitter')) {
+            twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
+        }
+
         const queryValues = [ ...bilibiliUesrs, ...twitterUsesrs ]
         console.log('最后参与查询的数据：', queryValues)
 
@@ -175,7 +191,7 @@ class TimelineTestService {
         const follows = await Mysql.matatakiTest.query(sql, [userId]);
 
         const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.id));
-        
+
         return follows.map(follow => {
             const bilibiliId = { ...bilibiliUesrs.find(bUser => parseInt(bUser.id) === follow.id) }.userId;
             return {
