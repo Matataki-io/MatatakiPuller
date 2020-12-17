@@ -2,47 +2,20 @@ const KoaRouter = require('koa-router')
 const StatusController = require('../controllers/status')
 const { disassemble } = require('../util/cookie')
 
-let status = new KoaRouter()
+const status = new KoaRouter()
 
 status.use(async (ctx, next) => {
-    const accessToken = ctx.request.headers['x-access-token']
-    if (accessToken) {
-        ctx.user = disassemble(accessToken)
-    }
-    await next()
+  const accessToken = ctx.request.headers['x-access-token']
+  if (accessToken) {
+    ctx.user = disassemble(accessToken)
+  }
+  await next()
 })
 
-status.get('/timeline', async (ctx, next) => {
-    if (ctx.request.query.network === 'test') {
-        const res = await StatusController.getStatusTest(ctx, next)
-        ctx.body = res
-    }
-    else {
-        const res = await StatusController.getStatus(ctx, next)
-        ctx.body = res
-    }
-})
+status.get('/timeline', StatusController.getStatus)
 
-status.get('/subscriptions', async (ctx, next) => {
-    if (ctx.request.query.network === 'test') {
-        const res = await StatusController.getStatusSubscriptionListTest(ctx, next)
-        ctx.body = res
-    }
-    else {
-        const res = await StatusController.getStatusSubscriptionList(ctx, next)
-        ctx.body = res
-    }
-})
+status.get('/subscriptions', StatusController.getStatusSubscriptionList)
 
-status.get('/user-timeline/bilibili/:id', async (ctx, next) => {
-    if (ctx.request.query.network === 'test') {
-        const res = await StatusController.getUserBilibiliTimelineTest(ctx, next)
-        ctx.body = res
-    }
-    else {
-        const res = await StatusController.getUserBilibiliTimeline(ctx, next)
-        ctx.body = res
-    }
-})
+status.get('/user-timeline/bilibili/:id', StatusController.getUserBilibiliTimeline)
 
 module.exports = status

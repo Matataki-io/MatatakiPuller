@@ -5,7 +5,7 @@ const Log = require('../util/log')
 
 const PLATFORM = 'twitter'
 
-class TwitterService {
+class MastodonService {
   static async addStatusList (statusList) {
     let valuesSql = ''
     const valuesData = []
@@ -61,4 +61,4 @@ class TwitterService {
   }
 }
 
-module.exports = TwitterService
+module.exports = MastodonService
