@@ -86,7 +86,7 @@ class TimelineService {
 
     static async getFollowBilibiliByUsesrId (userIds) {
         try {
-            const res = await Axios.post(`https://auth.matataki.io/api/user/info/bilibili`, { list: userIds, apiToken: config.apiToken })
+            const res = await Axios.post(`https://auth.matataki.io/api/user/info/bilibili`, { list: userIds }, { headers: { Authorization: `Bearer ${config.apiToken}` } })
             console.log('已关注用户的B站用户列表：', res.data)
             return res.data
         }
@@ -187,7 +187,7 @@ class TimelineTestService {
 
     static async getFollowBilibiliByUsesrId (userIds) {
         try {
-            const res = await Axios.post(`https://auth.matataki.io/apitest/user/info/bilibili`, { list: userIds, apiToken: config.apiToken })
+            const res = await Axios.post(`https://auth.matataki.io/apitest/user/info/bilibili`, { list: userIds }, { headers: { Authorization: `Bearer ${config.apiToken}` } })
             console.log('已关注用户的B站用户列表：', res.data)
             return res.data
         }
