@@ -24,5 +24,14 @@
     "dev": "node_modules/.bin/nodemon --harmony app.js --dev",
     "test": "node app.js --test",
     "conf": "node test/init.js"
+  },
+  "devDependencies": {
+    "eslint": "^7.15.0",
+    "eslint-config-koa": "^2.0.2",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^5.0.0"
   }
 }
