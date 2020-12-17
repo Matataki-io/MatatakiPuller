@@ -3,7 +3,7 @@ const moment = require('moment')
 
 const Log = require('../util/log')
 
-const PLATFORM = 'twitter'
+const PLATFORM = 'mastodon'
 
 class MastodonService {
   static async addStatusList (statusList) {
@@ -14,15 +14,15 @@ class MastodonService {
       const jsonData = JSON.stringify(item)
       const date = moment(new Date(item.created_at), false).format('YYYY-MM-DD HH:mm:ss')
       if (jsonData.length > 10239) {
-        Log.warning(`存入 ${PLATFORM} 动态时遇到过大的 Data JSON，id: ${item.id_str}`)
+        Log.warning(`存入 ${PLATFORM} 动态时遇到过大的 Data JSON，id: ${item.id}`)
         continue
       }
       valuesData.push(
-        PLATFORM + '_' + item.id_str,
+        PLATFORM + '_' + item.id,
         PLATFORM,
-        item.user.screen_name,
-        item.user.id_str,
-        item.user.screen_name,
+        item.account.username,
+        item.account.id,
+        item.account.username,
         date,
         jsonData
       )
@@ -39,7 +39,8 @@ class MastodonService {
         `
 
     const res = await Mysql.cache.query(sql, valuesData)
-    Log.debug('Twitter 数据库返回的结果：' + JSON.stringify(res))
+    console.log(res)
+    Log.debug('Mastodon 数据库返回的结果：' + JSON.stringify(res))
     return res
   }
 

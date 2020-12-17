@@ -35,7 +35,7 @@ const getStatusByID = async () => {
 const Twitter = async () => {
   // 初始化轮询进程列表
   const getStatusByIDScheduler = new Scheduler(getStatusByID, undefined, 150000)
-  getStatusByIDScheduler.start()
+  // getStatusByIDScheduler.start()
 }
 
 module.exports = {

@@ -78,9 +78,11 @@ app.use(routers.routes()).use(routers.allowedMethods())
 
 const { Bilibili } = require('./src/schedule/bilibili')
 const { Twitter } = require('./src/schedule/twitter')
+const { Mastodon } = require('./src/schedule/mastodon')
 
 Bilibili()
 Twitter()
+Mastodon()
 
 app.use(KoaStatic('./public'))
 
