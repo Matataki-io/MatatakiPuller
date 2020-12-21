@@ -16,6 +16,6 @@ status.get('/timeline', StatusController.getStatus)
 
 status.get('/subscriptions', StatusController.getStatusSubscriptionList)
 
-status.get('/user-timeline/bilibili/:id', StatusController.getUserBilibiliTimeline)
+status.get('/user-timeline/:platform/:id', StatusController.getUserTimeline)
 
 module.exports = status

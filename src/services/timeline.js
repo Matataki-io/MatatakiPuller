@@ -123,6 +123,9 @@ class TimelineService {
 
   // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
   static async getUserBilibiliTimeline (userId, offsetDynamicId) {
+    if (!userId || isNaN(userId)) {
+      return { code: 1152, erorr: 'unknown userId' }
+    }
     try {
       const biliUsers = await this.getFollowBilibiliByUsesrId([userId])
       if (!biliUsers || !biliUsers.length) return { code: 1100, error: 'Unbound bilibili' }

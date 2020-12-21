@@ -32,11 +32,18 @@ class StatusController {
   }
 
   // start 请使用 dynamic_id_str， 而不是 dynamic_id
-  static async getUserBilibiliTimeline (ctx) {
+  static async getUserTimeline (ctx) {
     const { start = 0 } = ctx.request.query
-    const userId = parseInt(ctx.params.id)
-    const res = await TimelineService.getUserBilibiliTimeline(userId, !isNaN(start) && start)
-    return res
+    const { id, platform } = ctx.params
+    let res = {}
+    switch (platform) {
+      case 'bilibili':
+        res = await TimelineService.getUserBilibiliTimeline(parseInt(id), !isNaN(start) && start)
+        break
+      default:
+        res = { code: 1151, erorr: 'unknown platform' }
+    }
+    ctx.body = res
   }
 }
 
