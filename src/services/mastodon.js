@@ -20,8 +20,11 @@ class MastodonService {
       if (/^<p>[a-f0-9]{20}<\/p>$/i.test(item.content)) {
         return
       }
+
+      const instance = domain.replace(/(http(s?):\/\/)/gm, '')
+
       valuesData.push(
-        PLATFORM + '_' + item.id,
+        PLATFORM + '_' + instance + '_' + item.id,
         PLATFORM,
         item.account.id + '@' + domain.replace(/(http(s?):\/\/)/gm, ''),
         item.account.id,
