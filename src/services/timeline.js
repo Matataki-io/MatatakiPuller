@@ -5,6 +5,7 @@ const Axios = require('axios').default
 const config = require('../../config/config')
 
 class TimelineService {
+  /** 获取动态订阅的时间线 */
   static async getSubscribedTimeline (userId, page = 1, pagesize = 20, filters) {
     if (filters && !filters.length) {
       return { count: 0, list: [], code: 1003, error: 'Filter item cannot be empty' }
@@ -65,6 +66,7 @@ class TimelineService {
     }
   }
 
+  /** 获取我订阅了动态的用户列表 */
   static async getStatusSubscriptionList (userId) {
     const sql = `
       SELECT
@@ -85,12 +87,15 @@ class TimelineService {
     const follows = await Mysql.matataki.query(sql, [userId])
 
     const bilibiliUesrs = await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.id))
+    const mastodonUesrs = await this.getFollowMastodonByUsesrId(follows.map(follow => follow.id))
 
     return follows.map(follow => {
       const bilibiliId = { ...bilibiliUesrs.find(bUser => parseInt(bUser.id) === follow.id) }.userId
+      const mastodonUesr = mastodonUesrs.find(mUser => parseInt(mUser.id) === follow.id)
       return {
         ...follow,
-        bilibili_id: bilibiliId || null
+        bilibili_id: bilibiliId || null,
+        mastodonUesr: mastodonUesr ? { id: mastodonUesr.userId, domain: mastodonUesr.domain, username: mastodonUesr.username } : null
       }
     }).filter(follow => follow.bilibili_id || follow.twitter_name)
   }
