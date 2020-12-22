@@ -40,8 +40,11 @@ class StatusController {
       case 'bilibili':
         res = await TimelineService.getUserBilibiliTimeline(parseInt(id), !isNaN(start) && start)
         break
+      case 'mastodon':
+        res = await TimelineService.getUserMastodonTimeline(parseInt(id), !isNaN(start) && start)
+        break
       default:
-        res = { code: 1151, erorr: 'unknown platform' }
+        res = { code: 1151, error: 'unknown platform' }
     }
     ctx.body = res
   }
