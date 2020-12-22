@@ -6,7 +6,7 @@ const Log = require('../util/log')
 const PLATFORM = 'mastodon'
 
 class MastodonService {
-  static async addStatusList (statusList) {
+  static async addStatusList (statusList, domain) {
     let valuesSql = ''
     const valuesData = []
     for (let i = 0; i < statusList.length; i++) {
@@ -17,10 +17,13 @@ class MastodonService {
         Log.warning(`存入 ${PLATFORM} 动态时遇到过大的 Data JSON，id: ${item.id}`)
         continue
       }
+      if (/^<p>[a-f0-9]{20}<\/p>$/i.test(item.content)) {
+        return
+      }
       valuesData.push(
         PLATFORM + '_' + item.id,
         PLATFORM,
-        item.account.username,
+        item.account.id + '@' + domain.replace(/(http(s?):\/\/)/gm, ''),
         item.account.id,
         item.account.username,
         date,

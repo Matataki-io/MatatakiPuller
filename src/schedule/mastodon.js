@@ -12,7 +12,7 @@ const getStatusByID = async () => {
       let res = {}
       try {
         res = await Axios.get(`${item.domain}/api/v1/accounts/${item.userId}/statuses`)
-        mastodonService.addStatusList(res.data)
+        mastodonService.addStatusList(res.data, item.domain)
       } catch (e) {
         console.error(e)
       }
@@ -24,7 +24,7 @@ const getStatusByID = async () => {
 
 const Mastodon = async () => {
   // 初始化轮询进程列表
-  const getStatusByIDScheduler = new Scheduler(getStatusByID, undefined, 150000)
+  const getStatusByIDScheduler = new Scheduler(getStatusByID, undefined, 10000)
   getStatusByIDScheduler.start()
 }
 
