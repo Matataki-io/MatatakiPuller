@@ -95,7 +95,7 @@ class TimelineService {
       return {
         ...follow,
         bilibili_id: bilibiliId || null,
-        mastodonUesr: mastodonUesr ? { id: mastodonUesr.userId, domain: mastodonUesr.domain, username: mastodonUesr.username } : null
+        mastodon_uesr: mastodonUesr ? { id: mastodonUesr.userId, domain: mastodonUesr.domain, username: mastodonUesr.username } : null
       }
     }).filter(follow => follow.bilibili_id || follow.twitter_name)
   }
