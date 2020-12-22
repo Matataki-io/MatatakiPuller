@@ -1,6 +1,7 @@
 const KoaRouter = require('koa-router')
 const StatusController = require('../controllers/status')
 const { disassemble } = require('../util/cookie')
+const Log = require('../util/log')
 
 const status = new KoaRouter()
 
@@ -9,7 +10,13 @@ status.use(async (ctx, next) => {
   if (accessToken) {
     ctx.user = disassemble(accessToken)
   }
-  await next()
+  try {
+    await next()
+  } catch (e) {
+    e.name = 'Status API error ' + e.name
+    Log.fatal(e)
+    ctx.body = { code: 1, erorr: e.message }
+  }
 })
 
 status.get('/timeline', StatusController.getStatus)
