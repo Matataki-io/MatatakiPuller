@@ -15,7 +15,7 @@ status.use(async (ctx, next) => {
   } catch (e) {
     e.name = 'Status API error ' + e.name
     Log.fatal(e)
-    ctx.body = { code: 1, erorr: e.message }
+    ctx.body = { code: 1, error: e.message }
   }
 })
 

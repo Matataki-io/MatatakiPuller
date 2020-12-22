@@ -172,7 +172,7 @@ class TimelineService {
   // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
   static async getUserBilibiliTimeline (userId, offsetDynamicId) {
     if (!userId || isNaN(userId)) {
-      return { code: 1152, erorr: 'unknown userId' }
+      return { code: 1152, error: 'unknown userId' }
     }
     try {
       const biliUsers = await this.getFollowBilibiliByUsesrId([userId])
@@ -182,7 +182,25 @@ class TimelineService {
       return { data: { count: 0, uuid: biliUsers[0].userId, list: res.data.data.cards || [] }, code: 0 }
     } catch (e) {
       console.error(`用户:${userId} 的B站时间线获取失败，错误信息：`, e)
-      return { code: 1101, erorr: 'unknown mistake' }
+      return { code: 1101, error: 'unknown mistake' }
+    }
+  }
+
+  // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
+  static async getUserMastodonTimeline (userId, maxId) {
+    if (!userId || isNaN(userId)) {
+      return { code: 1152, error: 'unknown userId' }
+    }
+    try {
+      const users = await this.getFollowMastodonByUsesrId([userId])
+      if (!users || !users.length) return { code: 1100, error: 'Unbound mastodon' }
+
+      const res = await Axios.get(`${users[0].domain}/api/v1/accounts/${users[0].userId}/statuses?exclude_replies=true${maxId ? '&max_id=' + maxId : ''}`)
+      const user = { id: users[0].userId, domain: users[0].domain, username: users[0].username }
+      return { data: { count: 0, user, list: res.data || [] }, code: 0 }
+    } catch (e) {
+      console.error(`用户:${userId} 的 Mastodon 时间线获取失败，错误信息：`, e)
+      return { code: 1101, error: 'unknown mistake' }
     }
   }
 }
