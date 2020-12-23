@@ -5,6 +5,16 @@ class SyncPostService {
   static async add (data) {
     let valuesSql = ''
     const valuesData = []
+
+    try {
+      const arr = []
+      arr.push(data.id)
+      arr.push(data.uid)
+      arr.push(data.timestamp)
+    } catch {
+      throw new Error('Missing context')
+    }
+
     valuesData.push(
       'matataki_' + data.id,
       'matataki',
@@ -32,6 +42,13 @@ class SyncPostService {
   }
 
   static async delete (data) {
+    try {
+      const arr = []
+      arr.push(data.id)
+    } catch {
+      throw new Error('Missing context')
+    }
+
     const res = await Mysql.cache.query(`DELETE FROM platform_status_cache WHERE platform = 'matataki' AND id = 'matataki_${data.id}';`)
     console.log(res)
     return res
