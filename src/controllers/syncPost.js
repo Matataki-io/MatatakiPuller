@@ -4,9 +4,9 @@ class SyncPostController {
   static async postSyncPostAdd (ctx) {
     const body = JSON.parse(JSON.stringify(ctx.request.body))
     try {
-      const res = await SyncPostService.add(body)
+      await SyncPostService.add(body)
       Log.warning('INSERT action on ' + body.id)
-      ctx.body = res
+      ctx.body = { code: 0, message: 'success' }
     } catch (e) {
       ctx.body = { code: 1160, message: 'missing context' }
     }
@@ -15,9 +15,9 @@ class SyncPostController {
   static async postSyncPostDelete (ctx) {
     const body = JSON.parse(JSON.stringify(ctx.request.body))
     try {
-      const res = await SyncPostService.delete(body)
+      await SyncPostService.delete(body)
       Log.warning('DELETE action on ' + body.id)
-      ctx.body = res
+      ctx.body = { code: 0, message: 'success' }
     } catch (e) {
       ctx.body = { code: 1160, message: 'missing context' }
     }
