@@ -4,6 +4,8 @@ const Axios = require('axios').default
 
 const config = require('../../config/config')
 
+const helper = require('../util/helper')
+
 class TimelineService {
   /** 获取动态订阅的时间线 */
   static async getSubscribedTimeline (userId, page = 1, pagesize = 20, filters) {
@@ -21,27 +23,33 @@ class TimelineService {
     }
 
     let whereStr = ''
-    let bilibiliUesrs = []
-    if (!filters || filters.includes('bilibili')) {
-      bilibiliUesrs = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
-      if (bilibiliUesrs && bilibiliUesrs.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('bilibili', bilibiliUesrs)
+
+    let matatakiUsers = []
+    if (!filters || filters.includes('matataki')) {
+      matatakiUsers = follows.map(follow => follow.fuid)
+      if (matatakiUsers && matatakiUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('matataki', matatakiUsers)
     }
 
-    let twitterUsesrs = []
+    let twitterUsers = []
     console.log('')
     if (!filters || filters.includes('twitter')) {
-      twitterUsesrs = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
-      if (twitterUsesrs && twitterUsesrs.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('twitter', twitterUsesrs)
+      twitterUsers = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
+      if (twitterUsers && twitterUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('twitter', twitterUsers)
     }
 
-    let mastodonUesrs = []
+    let bilibiliUsers = []
+    if (!filters || filters.includes('bilibili')) {
+      bilibiliUsers = (await this.getFollowBilibiliByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId)
+      if (bilibiliUsers && bilibiliUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('bilibili', bilibiliUsers)
+    }
+
+    let mastodonUsers = []
     if (!filters || filters.includes('mastodon')) {
-      mastodonUesrs = (await this.getFollowMastodonByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId + '@' + item.domain.replace(/^(https?:\/\/)/gm, ''))
-      if (mastodonUesrs && mastodonUesrs.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('mastodon', mastodonUesrs)
+      mastodonUsers = (await this.getFollowMastodonByUsesrId(follows.map(follow => follow.fuid))).map(item => item.userId + '@' + item.domain.replace(/^(https?:\/\/)/gm, ''))
+      if (mastodonUsers && mastodonUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('mastodon', mastodonUsers)
     }
 
-    const queryValues = [...bilibiliUesrs, ...twitterUsesrs, ...mastodonUesrs]
-    console.log('最后参与查询的数据：', queryValues)
+    const queryValues = [...matatakiUsers, ...twitterUsers, ...bilibiliUsers, ...mastodonUsers]
 
     if (!queryValues || !queryValues.length) {
       return { count: 0, list: [], code: 1002, error: 'The user you follow does not bind the required social account' }
@@ -56,10 +64,18 @@ class TimelineService {
     `
     const sql = `SELECT * FROM ${sqlBase} LIMIT ?, ?; SELECT COUNT(1) as count FROM ${sqlBase};`
 
-    console.log('生成的查询语句:', sql)
-
     const res = await Mysql.cache.query(sql, [...queryValues, ...limitValues, ...queryValues])
-    console.log('数据库查询结果：', { count: res[1][0].count, list: res[0] })
+
+    // 筛选搜索结果中的 matataki 文章并获取文章的具体数据
+    const posts = await this.getMatatakiPost(res[0].filter(item => item.platform === 'matataki').map(item => Number(item.data) || 0))
+    console.log('Posts 查询结果：', posts)
+    posts.forEach(post => {
+      const index = res[0].findIndex(item => item.platform === 'matataki' && Number(item.data) === post.id)
+      if (index !== -1) {
+        res[0][index].data = JSON.stringify(post)
+      }
+    })
+
     return {
       count: res[1][0].count,
       list: res[0]
@@ -167,6 +183,46 @@ class TimelineService {
       str += (str ? ',' : '') + '?'
     })
     return str
+  }
+
+  static async getMatatakiPost (postIds) {
+    console.log('postIds:', postIds)
+    if (!postIds || !postIds.length) return []
+
+    const sql = `
+      SELECT
+        a.id, a.uid, a.author, a.title, a.status, a.hash, a.create_time, a.cover, a.require_holdtokens, a.require_buy, a.short_content, a.is_recommend,
+        b.nickname, b.avatar, b.is_recommend AS user_is_recommend,
+        c.real_read_count AS \`read\`, c.likes,
+        t5.platform as pay_platform, t5.symbol as pay_symbol, t5.price as pay_price, t5.decimals as pay_decimals, t5.stock_quantity as pay_stock_quantity,
+        t7.id as token_id, t6.amount as token_amount, t7.name as token_name, t7.symbol as token_symbol, t7.decimals  as token_decimals
+
+      FROM posts a
+      LEFT JOIN users b ON a.uid = b.id
+      LEFT JOIN post_read_count c ON a.id = c.post_id
+      LEFT JOIN product_prices t5
+        ON a.id = t5.sign_id AND t5.category = 0
+      LEFT JOIN post_minetokens t6
+        ON a.id = t6.sign_id
+      LEFT JOIN minetokens t7
+        ON t7.id = t6.token_id
+
+      WHERE a.channel_id = 1
+        AND a.\`status\` = 0
+        AND a.id IN(${this.createValueList(postIds)})`
+    const posts = await Mysql.matataki.query(sql, [...postIds])
+
+    // Frank - 这里要展开屏蔽邮箱地址的魔法了
+    const emailMask = helper.emailMask
+    const list = posts.map(post => {
+      const author = emailMask(post.author)
+      return { ...post, author }
+    })
+
+    // 返沪用户是否发币
+    // const listFormat = await this.service.token.mineToken.formatListReturnTokenInfo(list, 'uid');
+
+    return list
   }
 
   // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
