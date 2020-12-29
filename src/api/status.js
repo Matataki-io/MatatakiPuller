@@ -25,4 +25,6 @@ status.get('/subscriptions', StatusController.getStatusSubscriptionList)
 
 status.get('/user-timeline/:platform/:id', StatusController.getUserTimeline)
 
+status.post('/interactive/:type', StatusController.createInteractiveEvent)
+
 module.exports = status

@@ -48,6 +48,20 @@ class StatusController {
     }
     ctx.body = res
   }
+
+  static async createInteractiveEvent (ctx) {
+    if (!ctx.user || !ctx.user.id) {
+      ctx.status = 403
+      return
+    }
+    const { type } = ctx.params
+    const { platform, dynamicId } = ctx.request.body
+    const res = await TimelineService.createInteractiveEvent(type, platform, dynamicId, ctx.user.id)
+    ctx.body = {
+      code: 0,
+      data: res
+    }
+  }
 }
 
 module.exports = StatusController

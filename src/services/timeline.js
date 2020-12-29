@@ -19,7 +19,7 @@ class TimelineService {
     }
 
     const initWhereStr = (platformStr, usersValue) => {
-      return `(platform = '${platformStr}' AND platform_user IN(${this.createValueList(usersValue)}))`
+      return `(t1.platform = '${platformStr}' AND t1.platform_user IN(${this.createValueList(usersValue)}))`
     }
 
     let whereStr = ''
@@ -31,7 +31,6 @@ class TimelineService {
     }
 
     let twitterUsers = []
-    console.log('')
     if (!filters || filters.includes('twitter')) {
       twitterUsers = follows.filter(follow => follow.twitter_name).map(follow => follow.twitter_name)
       if (twitterUsers && twitterUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('twitter', twitterUsers)
@@ -57,18 +56,26 @@ class TimelineService {
 
     const limitValues = [(page - 1) * pagesize, pagesize]
 
-    const sqlBase = `
-        platform_status_cache
+    const sql = `
+      SELECT t1.*, COUNT(t2.id) AS 'like', IF(t3.id, 1, 0) AS 'liked'
+        FROM platform_status_cache t1
+      LEFT JOIN platform_status_spread t2
+        ON t2.type = 0 AND t2.platform_id = t1.id
+      LEFT JOIN platform_status_spread t3
+        ON t3.user_id = ? AND t3.type = 0 AND t3.platform_id = t1.id
       WHERE ${whereStr}
+      GROUP BY t1.id
       ORDER BY timestamp DESC
-    `
-    const sql = `SELECT * FROM ${sqlBase} LIMIT ?, ?; SELECT COUNT(1) as count FROM ${sqlBase};`
+      LIMIT ?, ?;
 
-    const res = await Mysql.cache.query(sql, [...queryValues, ...limitValues, ...queryValues])
+      SELECT COUNT(1) as count
+        FROM platform_status_cache t1
+      WHERE ${whereStr};
+    `
+    const res = await Mysql.cache.query(sql, [userId, ...queryValues, ...limitValues, ...queryValues])
 
     // 筛选搜索结果中的 matataki 文章并获取文章的具体数据
     const posts = await this.getMatatakiPost(res[0].filter(item => item.platform === 'matataki').map(item => Number(item.data) || 0))
-    console.log('Posts 查询结果：', posts)
     posts.forEach(post => {
       const index = res[0].findIndex(item => item.platform === 'matataki' && Number(item.data) === post.id)
       if (index !== -1) {
@@ -258,6 +265,37 @@ class TimelineService {
       console.error(`用户:${userId} 的 Mastodon 时间线获取失败，错误信息：`, e)
       return { code: 1101, error: 'unknown mistake' }
     }
+  }
+
+  /** 记录动态时间轴内动态的互动事件，目前只支持“like” */
+  static async createInteractiveEvent (type, platform, dynamicId, userId) {
+    const typeList = ['like']
+    if (!typeList.includes(type)) return false
+    // 这个查询语语句会对同一个用户的重复操作进行去重，如果数据条目已存在返回 false
+    const sql = `
+      SET @platform = ?;
+      SET @dynamicId = ?;
+      SET @userId = ?;
+      SET @type = ?;
+
+      INSERT INTO platform_status_spread
+        (platform_id, platform, user_id, type)
+      SELECT
+        CONCAT(@platform, "_", @dynamicId), @platform, @userId, @type
+      WHERE NOT EXISTS (
+        SELECT 1 FROM platform_status_spread
+        WHERE platform_id = CONCAT(@platform, "_", @dynamicId)
+        AND user_id = @userId
+        AND type = @type
+      );
+    `
+    const res = await Mysql.cache.query(sql, [
+      platform,
+      dynamicId,
+      userId,
+      typeList.indexOf(type)
+    ])
+    return res[res.length - 1].affectedRows > 0
   }
 }
 
