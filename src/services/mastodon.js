@@ -18,7 +18,7 @@ class MastodonService {
         continue
       }
       if (/^<p>[a-f0-9]{20}<\/p>$/i.test(item.content)) {
-        return
+        continue
       }
 
       const instance = domain.replace(/(http(s?):\/\/)/gm, '')
