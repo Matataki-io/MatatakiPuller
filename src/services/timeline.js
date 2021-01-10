@@ -6,6 +6,8 @@ const config = require('../../config/config')
 
 const helper = require('../util/helper')
 
+const notifyEvent = require('./notifyEvent')
+
 class TimelineService {
   /** 获取动态订阅的时间线 */
   static async getSubscribedTimeline (userId, page = 1, pagesize = 20, filters) {
@@ -135,7 +137,6 @@ class TimelineService {
     `
 
     const res = await Mysql.matataki.query(sql, [userId])
-    console.log('已关注的用户列表：', res)
     return res
   }
 
@@ -152,8 +153,6 @@ class TimelineService {
           }
         }
       )
-
-      console.log('已关注用户的B站用户列表：', res.data)
       return res.data
     } catch (e) {
       console.error('获取不到已关注的B站用户列表')
@@ -162,7 +161,6 @@ class TimelineService {
   }
 
   static async getFollowMastodonByUsesrId (userIds) {
-    console.log('获取 Mastodon 用户')
     try {
       const res = await Axios.post(
         config.auth.api + '/user/info/mastodon',
@@ -175,8 +173,6 @@ class TimelineService {
           }
         }
       )
-
-      console.log('已关注用户的 Mastodon 用户列表：', res.data)
       return res.data
     } catch (e) {
       console.error('获取不到已关注的 Mastodon 用户列表')
@@ -193,7 +189,6 @@ class TimelineService {
   }
 
   static async getMatatakiPost (postIds) {
-    console.log('postIds:', postIds)
     if (!postIds || !postIds.length) return []
 
     const sql = `
@@ -267,6 +262,24 @@ class TimelineService {
     }
   }
 
+  // 根据平台方的用户 ID 获取对应的 Matataki 用户 ID
+  static async getUserIdByPlatformId (platform, id) {
+    try {
+      const res = await Axios.get(`${config.auth.api}/user/platforminfo?platform=${platform}&userId=${id}`, {
+        headers: {
+          Authorization: `Bearer ${config.apiToken}`
+        }
+      })
+      if (res.data.code) {
+        console.error(res.data.message)
+        return null
+      }
+      return (res.data && parseInt(res.data.id)) || 0
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   /** 记录动态时间轴内动态的互动事件，目前只支持“like” */
   static async createInteractiveEvent (type, platform, dynamicId, userId) {
     const typeList = ['like']
@@ -295,7 +308,25 @@ class TimelineService {
       userId,
       typeList.indexOf(type)
     ])
+
+    this.sendInteractiveNotifyEvent(userId, platform, dynamicId, type)
     return res[res.length - 1].affectedRows > 0
+  }
+
+  /** 创建动态互动事件的通知 */
+  static async sendInteractiveNotifyEvent (userId, platform, dynamicId, action) {
+    const sql = `
+      SELECT *
+        FROM platform_status_cache
+      WHERE id = CONCAT(?, "_", ?) AND platform = ?;
+    `
+    const dynamicRes = await Mysql.cache.query(sql, [platform, dynamicId, platform])
+    if (!dynamicRes || !dynamicRes.length) return
+    const dynamic = dynamicRes[0]
+    const recipient = await this.getUserIdByPlatformId(dynamic.platform, dynamic.platform_user)
+    const res = await notifyEvent.sendEvent(userId, [recipient], action, dynamic.uuid, 'platformDynamics', undefined, true)
+    console.log('通知发布结果：', res)
+    return res
   }
 }
 
