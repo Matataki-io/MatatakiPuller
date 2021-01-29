@@ -1,5 +1,6 @@
 const Log = require('../util/log')
 const Mysql = require('../database/mysql')
+const moment = require('moment')
 
 class SyncPostService {
   static async add (data) {
@@ -14,6 +15,8 @@ class SyncPostService {
     } catch {
       throw new Error('Missing context')
     }
+    // 依据 UTC 时间生成 Date 对象
+    const timestamp = moment.utc(data.timestamp, 'YYYY-MM-DD HH:mm:ss').toDate()
 
     valuesData.push(
       'matataki_' + data.id,
@@ -21,20 +24,20 @@ class SyncPostService {
       data.uid,
       data.uid,
       null,
-      data.timestamp,
+      moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
       data.id
     )
-    valuesSql += (valuesSql ? ',' : '') + '(?, ?, ?, ?, ?, ?, ?)'
+    valuesSql += (valuesSql ? ',' : '') + '(?, ?, ?, ?, ?, CONVERT_TZ(?, "+00:00", "+08:00"), ?)'
 
     if (!valuesSql) return null
     const sql = `
-            INSERT INTO platform_status_cache
-                (id, platform, platform_user, platform_user_id, platform_username, timestamp, data)
-            VALUES
-                ${valuesSql}
-            ON DUPLICATE KEY UPDATE
-                data = VALUES(data);
-        `
+      INSERT INTO platform_status_cache
+        (id, platform, platform_user, platform_user_id, platform_username, timestamp, data)
+      VALUES
+        ${valuesSql}
+      ON DUPLICATE KEY UPDATE
+        data = VALUES(data);
+    `
 
     const res = await Mysql.cache.query(sql, valuesData)
     Log.debug('数据库返回的结果：' + JSON.stringify(res))
