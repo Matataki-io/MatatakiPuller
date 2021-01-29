@@ -15,8 +15,6 @@ class SyncPostService {
     } catch {
       throw new Error('Missing context')
     }
-    // 依据 UTC 时间生成 Date 对象
-    const timestamp = moment.utc(data.timestamp, 'YYYY-MM-DD HH:mm:ss').toDate()
 
     valuesData.push(
       'matataki_' + data.id,
@@ -24,7 +22,8 @@ class SyncPostService {
       data.uid,
       data.uid,
       null,
-      moment(timestamp).format('YYYY-MM-DD HH:mm:ss'),
+      moment(data.timestamp).format('YYYY-MM-DD HH:mm:ss'),
+      data.timestamp,
       data.id
     )
     valuesSql += (valuesSql ? ',' : '') + '(?, ?, ?, ?, ?, CONVERT_TZ(?, "+00:00", "+08:00"), ?)'
