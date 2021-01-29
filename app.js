@@ -22,7 +22,7 @@ let config
 try {
   config = require('./config/config')
 } catch (e) {
-  Log.fatal(e)
+  Log.error(e)
   const err = new Error('请先根据 config.js.example 创建 config.js 文件')
   err.name = 'Configuration Error'
   throw err

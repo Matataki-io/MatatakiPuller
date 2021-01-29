@@ -28,7 +28,7 @@ const getStatusByID = async () => {
           }
           reject(new Error('reply is empty'))
         })
-    }).then(reply => { twitterService.addStatusList(reply) }).catch(err => Log.fatal(err))
+    }).then(reply => { twitterService.addStatusList(reply) }).catch(err => Log.error(err))
   })
 }
 

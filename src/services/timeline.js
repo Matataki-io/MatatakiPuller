@@ -6,6 +6,8 @@ const config = require('../../config/config')
 
 const helper = require('../util/helper')
 
+const notifyEvent = require('./notifyEvent')
+
 class TimelineService {
   /** 获取动态订阅的时间线 */
   static async getSubscribedTimeline (userId, page = 1, pagesize = 20, filters) {
@@ -135,7 +137,6 @@ class TimelineService {
     `
 
     const res = await Mysql.matataki.query(sql, [userId])
-    console.log('已关注的用户列表：', res)
     return res
   }
 
@@ -152,8 +153,6 @@ class TimelineService {
           }
         }
       )
-
-      console.log('已关注用户的B站用户列表：', res.data)
       return res.data
     } catch (e) {
       console.error('获取不到已关注的B站用户列表')
@@ -162,7 +161,6 @@ class TimelineService {
   }
 
   static async getFollowMastodonByUsesrId (userIds) {
-    console.log('获取 Mastodon 用户')
     try {
       const res = await Axios.post(
         config.auth.api + '/user/info/mastodon',
@@ -175,8 +173,6 @@ class TimelineService {
           }
         }
       )
-
-      console.log('已关注用户的 Mastodon 用户列表：', res.data)
       return res.data
     } catch (e) {
       console.error('获取不到已关注的 Mastodon 用户列表')
@@ -193,12 +189,11 @@ class TimelineService {
   }
 
   static async getMatatakiPost (postIds) {
-    console.log('postIds:', postIds)
     if (!postIds || !postIds.length) return []
 
     const sql = `
       SELECT
-        a.id, a.uid, a.author, a.title, a.status, a.hash, a.create_time, a.cover, a.require_holdtokens, a.require_buy, a.short_content, a.is_recommend,
+        a.id, a.uid, a.author, a.title, a.status, a.hash, a.create_time, a.cover, a.require_holdtokens, a.require_buy, a.short_content, a.is_recommend, a.channel_id,
         b.nickname, b.avatar, b.is_recommend AS user_is_recommend,
         c.real_read_count AS \`read\`, c.likes,
         t5.platform as pay_platform, t5.symbol as pay_symbol, t5.price as pay_price, t5.decimals as pay_decimals, t5.stock_quantity as pay_stock_quantity,
@@ -214,10 +209,40 @@ class TimelineService {
       LEFT JOIN minetokens t7
         ON t7.id = t6.token_id
 
-      WHERE a.channel_id = 1
+      WHERE a.channel_id IN(1, 3)
         AND a.\`status\` = 0
         AND a.id IN(${this.createValueList(postIds)})`
     const posts = await Mysql.matataki.query(sql, [...postIds])
+
+    // 这部分是关于动态的附加处理
+    const shareList = posts.filter(item => item.channel_id === 3)
+    const shareIds = shareList.map(item => item.id)
+    const id2posts = {}
+    shareList.forEach(item => {
+      item.refs = []
+      item.beRefs = []
+      id2posts[item.id] = item
+    })
+
+    const refResult = await this.getRef(shareIds)
+    const refs = refResult[0]
+    const beRefs = refResult[1]
+    // 引用
+    for (let i = 0; i < refs.length; i++) {
+      const id = refs[i].sign_id
+      id2posts[id] && id2posts[id].refs.push(refs[i])
+    }
+    // 被引用
+    for (let i = 0; i < beRefs.length; i++) {
+      const id = beRefs[i].ref_sign_id
+      id2posts[id] && id2posts[id].beRefs.push(beRefs[i])
+    }
+    // 媒体
+    const mediaList = await this.getMedia(shareIds)
+    for (let i = 0; i < mediaList.length; i++) {
+      const id = mediaList[i].post_id
+      id2posts[id] && id2posts[id].media.push(mediaList[i])
+    }
 
     // Frank - 这里要展开屏蔽邮箱地址的魔法了
     const emailMask = helper.emailMask
@@ -226,10 +251,59 @@ class TimelineService {
       return { ...post, author }
     })
 
-    // 返沪用户是否发币
+    // 返回用户是否发币
     // const listFormat = await this.service.token.mineToken.formatListReturnTokenInfo(list, 'uid');
 
     return list
+  }
+
+  static async getRef (postids) {
+    if (!postids || !postids.length) return [[], []]
+    const refResult = await Mysql.matataki.query(
+      `SELECT t1.sign_id, t1.ref_sign_id, t1.url, t1.title, t1.summary, t1.cover, t1.create_time, t1.number,
+      t2.channel_id,
+      t3.username, t3.nickname, t3.platform, t3.avatar, t3.id uid,
+      t4.real_read_count, t4.likes, t4.dislikes,
+      t5.platform as pay_platform, t5.symbol as pay_symbol, t5.price as pay_price, t5.decimals as pay_decimals, t5.stock_quantity as pay_stock_quantity,
+      t7.id as token_id, t6.amount as token_amount, t7.name as token_name, t7.symbol as token_symbol, t7.decimals  as token_decimals
+      FROM post_references t1
+      LEFT JOIN posts t2
+      ON t1.ref_sign_id = t2.id
+      LEFT JOIN users t3
+      ON t2.uid = t3.id
+      LEFT JOIN post_read_count t4
+      ON t1.ref_sign_id = t4.post_id
+      LEFT JOIN product_prices t5
+      ON t1.ref_sign_id = t5.sign_id AND t5.category = 0
+      LEFT JOIN post_minetokens t6
+      ON t1.ref_sign_id = t6.sign_id
+      LEFT JOIN minetokens t7
+      ON t7.id = t6.token_id
+      WHERE t1.sign_id IN (${this.createValueList(postids)}) AND t1.status = 0;
+
+      SELECT t1.sign_id, t1.ref_sign_id, t1.create_time, t1.number,
+      t2.channel_id, t2.title, t2.short_content AS summary, t2.cover,
+      t3.username, t3.nickname, t3.platform, t3.avatar, t3.id uid,
+      t4.real_read_count, t4.likes, t4.dislikes,
+      t5.platform as pay_platform, t5.symbol as pay_symbol, t5.price as pay_price, t5.decimals as pay_decimals, t5.stock_quantity as pay_stock_quantity,
+      t7.id as token_id, t6.amount as token_amount, t7.name as token_name, t7.symbol as token_symbol, t7.decimals  as token_decimals
+      FROM post_references t1
+      LEFT JOIN posts t2
+      ON t1.sign_id = t2.id
+      LEFT JOIN users t3
+      ON t2.uid = t3.id
+      LEFT JOIN post_read_count t4
+      ON t1.sign_id = t4.post_id
+      LEFT JOIN product_prices t5
+      ON t1.sign_id = t5.sign_id AND t5.category = 0
+      LEFT JOIN post_minetokens t6
+      ON t1.sign_id = t6.sign_id
+      LEFT JOIN minetokens t7
+      ON t7.id = t6.token_id
+      WHERE t1.ref_sign_id IN (${this.createValueList(postids)}) AND t1.status = 0;`,
+      [...postids, ...postids]
+    )
+    return refResult
   }
 
   // offsetDynamicId 请使用 dynamic_id_str， 而不是 dynamic_id
@@ -267,6 +341,24 @@ class TimelineService {
     }
   }
 
+  // 根据平台方的用户 ID 获取对应的 Matataki 用户 ID
+  static async getUserIdByPlatformId (platform, id) {
+    try {
+      const res = await Axios.get(`${config.auth.api}/user/platforminfo?platform=${platform}&userId=${id}`, {
+        headers: {
+          Authorization: `Bearer ${config.apiToken}`
+        }
+      })
+      if (res.data.code) {
+        console.error(res.data.message)
+        return null
+      }
+      return (res.data && parseInt(res.data.id)) || 0
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   /** 记录动态时间轴内动态的互动事件，目前只支持“like” */
   static async createInteractiveEvent (type, platform, dynamicId, userId) {
     const typeList = ['like']
@@ -295,7 +387,32 @@ class TimelineService {
       userId,
       typeList.indexOf(type)
     ])
+
+    // this.sendInteractiveNotifyEvent(userId, platform, dynamicId, type)
     return res[res.length - 1].affectedRows > 0
+  }
+
+  static async getMedia (ids) {
+    if (!ids || !ids.length) return []
+    const sql = `SELECT * FROM dynamic_media WHERE post_id IN(${this.createValueList(ids)});`
+    const res = await Mysql.matataki.query(sql, ids)
+    return res
+  }
+
+  /** 创建动态互动事件的通知 */
+  static async sendInteractiveNotifyEvent (userId, platform, dynamicId, action) {
+    const sql = `
+      SELECT *
+        FROM platform_status_cache
+      WHERE id = CONCAT(?, "_", ?) AND platform = ?;
+    `
+    const dynamicRes = await Mysql.cache.query(sql, [platform, dynamicId, platform])
+    if (!dynamicRes || !dynamicRes.length) return
+    const dynamic = dynamicRes[0]
+    const recipient = await this.getUserIdByPlatformId(dynamic.platform, dynamic.platform_user)
+    const res = await notifyEvent.sendEvent(userId, [recipient], action, dynamic.uuid, 'platformDynamics', undefined, true)
+    console.log('通知发布结果：', res)
+    return res
   }
 }
 
