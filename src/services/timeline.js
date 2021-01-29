@@ -221,6 +221,7 @@ class TimelineService {
     shareList.forEach(item => {
       item.refs = []
       item.beRefs = []
+      item.media = []
       id2posts[item.id] = item
     })
 
