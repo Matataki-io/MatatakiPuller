@@ -32,7 +32,6 @@ class TimelineService {
       matatakiUsers.push(userId)
       if (matatakiUsers && matatakiUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('matataki', matatakiUsers)
     }
-    console.log('matatakiUsers:', matatakiUsers)
 
     let twitterUsers = []
     if (!filters || filters.includes('twitter')) {
