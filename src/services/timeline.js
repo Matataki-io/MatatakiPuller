@@ -78,12 +78,15 @@ class TimelineService {
     const res = await Mysql.cache.query(sql, [userId, ...queryValues, ...limitValues, ...queryValues])
 
     // 筛选搜索结果中的 matataki 文章并获取文章的具体数据
-    const posts = await this.getMatatakiPost(res[0].filter(item => item.platform === 'matataki').map(item => Number(item.data) || 0))
+    const posts = await this.getMatatakiPost(userId, res[0].filter(item => item.platform === 'matataki').map(item => Number(item.data) || 0))
     posts.forEach(post => {
       const index = res[0].findIndex(item => item.platform === 'matataki' && Number(item.data) === post.id)
       if (index !== -1) {
         res[0][index].data = JSON.stringify(post)
       }
+    })
+    res[0].forEach(post => {
+      if (!isNaN(post.data)) post.data = null
     })
 
     return {
@@ -189,7 +192,7 @@ class TimelineService {
     return str
   }
 
-  static async getMatatakiPost (postIds) {
+  static async getMatatakiPost (userId, postIds) {
     if (!postIds || !postIds.length) return []
 
     const sql = `
@@ -198,7 +201,8 @@ class TimelineService {
         b.nickname, b.avatar, b.is_recommend AS user_is_recommend,
         c.real_read_count AS \`read\`, c.likes,
         t5.platform as pay_platform, t5.symbol as pay_symbol, t5.price as pay_price, t5.decimals as pay_decimals, t5.stock_quantity as pay_stock_quantity,
-        t7.id as token_id, t6.amount as token_amount, t7.name as token_name, t7.symbol as token_symbol, t7.decimals  as token_decimals
+        t7.id as token_id, t6.amount as token_amount, t7.name as token_name, t7.symbol as token_symbol, t7.decimals  as token_decimals,
+        IF(plog.id, 1, 0) AS i_liked
 
       FROM posts a
       LEFT JOIN users b ON a.uid = b.id
@@ -209,11 +213,13 @@ class TimelineService {
         ON a.id = t6.sign_id
       LEFT JOIN minetokens t7
         ON t7.id = t6.token_id
+      LEFT JOIN post_action_log plog
+        ON plog.post_id = a.id AND plog.action = 'like' AND plog.uid = ?
 
       WHERE a.channel_id IN(1, 3)
         AND a.\`status\` = 0
         AND a.id IN(${this.createValueList(postIds)})`
-    const posts = await Mysql.matataki.query(sql, [...postIds])
+    const posts = await Mysql.matataki.query(sql, [(userId || 0), ...postIds])
 
     // 这部分是关于动态的附加处理
     const shareList = posts.filter(item => item.channel_id === 3)
