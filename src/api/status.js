@@ -21,6 +21,8 @@ status.use(async (ctx, next) => {
 
 status.get('/timeline', StatusController.getStatus)
 
+status.get('/user/timeline/:id', StatusController.getUserStatus)
+
 status.get('/subscriptions', StatusController.getStatusSubscriptionList)
 
 status.get('/user-timeline/:platform/:id', StatusController.getUserTimeline)

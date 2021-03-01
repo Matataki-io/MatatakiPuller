@@ -95,6 +95,108 @@ class TimelineService {
     }
   }
 
+  /** 获取用户的动态时间线 */
+  static async getUserTimeline (userId, page = 1, pagesize = 20, filters) {
+    if (filters && !filters.length) {
+      return { count: 0, list: [], code: 1003, error: 'Filter item cannot be empty' }
+    }
+
+    const initWhereStr = (platformStr, usersValue) => {
+      return `(t1.platform = '${platformStr}' AND t1.platform_user IN(${this.createValueList(usersValue)}))`
+    }
+
+    let whereStr = ''
+
+    const matatakiUsers = []
+    if (!filters || filters.includes('matataki')) {
+      matatakiUsers.push(userId)
+      if (matatakiUsers && matatakiUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('matataki', matatakiUsers)
+    }
+
+    let twitterUsers = []
+    if (!filters || filters.includes('twitter')) {
+      twitterUsers = (await this.getTwitterByUserId(userId)).map(item => item.twitter_name)
+      if (twitterUsers && twitterUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('twitter', twitterUsers)
+    }
+
+    let bilibiliUsers = []
+    if (!filters || filters.includes('bilibili')) {
+      bilibiliUsers = (await this.getFollowBilibiliByUsesrId([userId])).map(item => item.userId)
+      if (bilibiliUsers && bilibiliUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('bilibili', bilibiliUsers)
+    }
+
+    let mastodonUsers = []
+    let mastodonDetail = null
+    if (!filters || filters.includes('mastodon')) {
+      const mdSqlRes = await this.getFollowMastodonByUsesrId([userId])
+      if (mdSqlRes && mdSqlRes.length) {
+        mastodonDetail = { id: mdSqlRes[0].userId, domain: mdSqlRes[0].domain, username: mdSqlRes[0].username }
+        mastodonUsers = mdSqlRes.map(item => item.userId + '@' + item.domain.replace(/^(https?:\/\/)/gm, ''))
+        if (mastodonUsers && mastodonUsers.length) whereStr += (whereStr ? ' OR ' : '') + initWhereStr('mastodon', mastodonUsers)
+      }
+    }
+
+    const queryValues = [...matatakiUsers, ...twitterUsers, ...bilibiliUsers, ...mastodonUsers]
+
+    if (!queryValues || !queryValues.length) {
+      return {
+        code: 1002,
+        error: 'The user you follow does not bind the required social account',
+        count: 0,
+        list: [],
+        accounts: {
+          matataki_id: userId,
+          mastodon_user: mastodonDetail,
+          bilibili_id: bilibiliUsers[0] || null,
+          twitter_name: twitterUsers[0] || null
+        }
+      }
+    }
+
+    const limitValues = [(page - 1) * pagesize, pagesize]
+
+    const sql = `
+        SELECT t1.*, COUNT(t2.id) AS 'like', IF(t3.id, 1, 0) AS 'liked'
+          FROM platform_status_cache t1
+        LEFT JOIN platform_status_spread t2
+          ON t2.type = 0 AND t2.platform_id = t1.id
+        LEFT JOIN platform_status_spread t3
+          ON t3.user_id = ? AND t3.type = 0 AND t3.platform_id = t1.id
+        WHERE ${whereStr}
+        GROUP BY t1.id
+        ORDER BY timestamp DESC
+        LIMIT ?, ?;
+
+        SELECT COUNT(1) as count
+          FROM platform_status_cache t1
+        WHERE ${whereStr};
+      `
+    const res = await Mysql.cache.query(sql, [userId, ...queryValues, ...limitValues, ...queryValues])
+
+    // 筛选搜索结果中的 matataki 文章并获取文章的具体数据
+    const posts = await this.getMatatakiPost(userId, res[0].filter(item => item.platform === 'matataki').map(item => Number(item.data) || 0))
+    posts.forEach(post => {
+      const index = res[0].findIndex(item => item.platform === 'matataki' && Number(item.data) === post.id)
+      if (index !== -1) {
+        res[0][index].data = JSON.stringify(post)
+      }
+    })
+    res[0].forEach(post => {
+      if (!isNaN(post.data)) post.data = null
+    })
+
+    return {
+      accounts: {
+        matataki_id: userId,
+        mastodon_user: mastodonDetail,
+        bilibili_id: bilibiliUsers[0] || null,
+        twitter_name: twitterUsers[0] || null
+      },
+      count: res[1][0].count,
+      list: res[0]
+    }
+  }
+
   /** 获取我订阅了动态的用户列表 */
   static async getStatusSubscriptionList (userId) {
     const sql = `
@@ -138,6 +240,18 @@ class TimelineService {
       LEFT JOIN user_accounts t2
         ON t2.uid = t1.fuid AND t2.platform = 'twitter'
       WHERE t1.uid = ? AND t1.status = 1;
+    `
+
+    const res = await Mysql.matataki.query(sql, [userId])
+    return res
+  }
+
+  static async getTwitterByUserId (userId) {
+    const sql = `
+      SELECT
+        account as twitter_name
+      FROM user_accounts
+      WHERE uid = ? AND platform = 'twitter';
     `
 
     const res = await Mysql.matataki.query(sql, [userId])
