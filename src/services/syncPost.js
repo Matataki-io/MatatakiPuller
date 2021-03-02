@@ -22,7 +22,7 @@ class SyncPostService {
       data.uid,
       data.uid,
       null,
-      moment(data.timestamp).format('YYYY-MM-DD HH:mm:ss'),
+      moment(data.timestamp).utc().format('YYYY-MM-DD HH:mm:ss'),
       data.id
     )
     valuesSql += (valuesSql ? ',' : '') + '(?, ?, ?, ?, ?, CONVERT_TZ(?, "+00:00", "+08:00"), ?)'
