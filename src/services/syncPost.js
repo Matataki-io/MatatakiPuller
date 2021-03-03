@@ -7,6 +7,9 @@ class SyncPostService {
     let valuesSql = ''
     const valuesData = []
 
+    Log.trace(`这是 /sync/post/add API 收到的时间戳：${data.timestamp}`)
+    Log.trace(`这是 /sync/post/add API 转换后的时间戳：${moment(data.timestamp).utc().format('YYYY-MM-DD HH:mm:ss')}`)
+
     try {
       const arr = []
       arr.push(data.id)
