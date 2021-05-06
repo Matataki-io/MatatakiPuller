@@ -17,6 +17,17 @@ class StatusController {
     }
   }
 
+  static async getAllStatus (ctx) {
+    const userId = (ctx.user && ctx.user.id) || undefined
+    let { page = 1, pagesize = 20, filters } = ctx.request.query
+    filters = filters ? JSON.parse(filters) : undefined
+    const res = await TimelineService.getAllTimeline(parseInt(page), parseInt(pagesize), userId, filters)
+    ctx.body = {
+      code: 0,
+      data: res
+    }
+  }
+
   static async getUserStatus (ctx) {
     const userId = ctx.params.id
     let { page = 1, pagesize = 20, filters } = ctx.request.query
