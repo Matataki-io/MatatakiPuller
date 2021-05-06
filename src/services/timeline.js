@@ -95,6 +95,56 @@ class TimelineService {
     }
   }
 
+  static async getAllTimeline (page = 1, pagesize = 20, userId, filters) {
+    if (filters && !filters.length) {
+      return { count: 0, list: [], code: 1003, error: 'Filter item cannot be empty' }
+    }
+    const likedSql = `
+      LEFT JOIN platform_status_spread t3
+        ON t3.user_id = ? AND t3.type = 0 AND t3.platform_id = t1.id
+    `
+
+    const sql = `
+      SELECT t1.*, COUNT(t2.id) AS 'like'${userId ? ', IF(t3.id, 1, 0) AS \'liked\'' : ''}
+        FROM platform_status_cache t1
+      LEFT JOIN platform_status_spread t2
+        ON t2.type = 0 AND t2.platform_id = t1.id
+      ${userId ? likedSql : ''}
+      ${filters ? 'WHERE t1.platform IN(?)' : ''}
+      GROUP BY t1.id
+      ORDER BY timestamp DESC
+      LIMIT ?, ?;
+
+      SELECT COUNT(1) as count
+        FROM platform_status_cache t1
+      ${filters ? 'WHERE t1.platform IN(?)' : ''};
+    `
+    const limitValues = [(page - 1) * pagesize, pagesize]
+    const dataList = []
+    if (userId) dataList.push(userId)
+    if (filters) dataList.push(filters)
+    dataList.push(...limitValues)
+    if (filters) dataList.push(filters)
+    const res = await Mysql.cache.query(sql, dataList)
+
+    // 筛选搜索结果中的 matataki 文章并获取文章的具体数据
+    const posts = await this.getMatatakiPost(userId, res[0].filter(item => item.platform === 'matataki').map(item => Number(item.data) || 0))
+    posts.forEach(post => {
+      const index = res[0].findIndex(item => item.platform === 'matataki' && Number(item.data) === post.id)
+      if (index !== -1) {
+        res[0][index].data = JSON.stringify(post)
+      }
+    })
+    res[0].forEach(post => {
+      if (!isNaN(post.data)) post.data = null
+    })
+
+    return {
+      count: res[1][0].count,
+      list: res[0]
+    }
+  }
+
   /** 获取用户的动态时间线 */
   static async getUserTimeline (userId, page = 1, pagesize = 20, filters) {
     if (filters && !filters.length) {
